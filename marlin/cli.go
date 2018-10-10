@@ -27,7 +27,10 @@ var CliState struct {
 
 var MarlinApi *Api
 var splash = `
-Marlin Search
+              __            
+|V| _ __|o__ (_  _  _ ___|_ 
+| |(_|| ||| |__)(/_(_||(_| |
+                                                                          
 `
 
 func changeLivePrefix() (string, bool) {

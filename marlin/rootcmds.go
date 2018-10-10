@@ -22,6 +22,28 @@ func rootCompleter(args []string) []prompt.Suggest {
 	if len(args) <= 1 {
 		return prompt.FilterHasPrefix(rootCommands, args[0], true)
 	}
+
+	if len(args) == 2 {
+		switch args[0] {
+		case "application":
+			return prompt.FilterHasPrefix(getApplicationPrompts(), args[1], true)
+		}
+	}
+	return []prompt.Suggest{}
+}
+
+func getApplicationPrompts() []prompt.Suggest {
+	resp, success := MarlinApi.getApplications()
+	if success {
+		var result []map[string]interface{}
+		if err := json.Unmarshal([]byte(resp), &result); err == nil {
+			var res []prompt.Suggest
+			for _, d := range result {
+				res = append(res, prompt.Suggest{Text: d["name"].(string)})
+			}
+			return res
+		}
+	}
 	return []prompt.Suggest{}
 }
 
@@ -68,7 +90,8 @@ func listApps() {
 
 func createApp(args []string) {
 	if len(args) != 2 {
-		fmt.Println("Error: create-application <App Name>")
+		fmt.Println("Error: create-application <App Name>\n")
+		return
 	}
 	resp, success := MarlinApi.createApplication(args[1])
 	displayResult(resp, success)
