@@ -1,6 +1,7 @@
 package marlin
 
 import (
+	"bytes"
 	"crypto/tls"
 	"encoding/json"
 	"io/ioutil"
@@ -30,6 +31,16 @@ func (api *Api) httpGet(path string) (resp *http.Response, err error) {
 	client := getClient()
 	url := api.formUrl(path)
 	req, err := http.NewRequest("GET", url, nil)
+	req.Header.Add("X-Marlin-Application-Id", api.AppId)
+	req.Header.Add("X-Marlin-REST-API-KEY", api.ApiKey)
+	return client.Do(req)
+}
+
+func (api *Api) httpPost(path string, data string) (resp *http.Response, err error) {
+	client := getClient()
+	url := api.formUrl(path)
+	req, err := http.NewRequest("POST", url, bytes.NewBuffer([]byte(data)))
+	req.Header.Set("Content-Type", "application/json")
 	req.Header.Add("X-Marlin-Application-Id", api.AppId)
 	req.Header.Add("X-Marlin-REST-API-KEY", api.ApiKey)
 	return client.Do(req)
@@ -69,5 +80,19 @@ func (api *Api) getInfo() (string, bool) {
 
 func (api *Api) getApplications() (string, bool) {
 	resp, err := api.httpGet("applications")
+	return handleResponse(resp, err)
+}
+
+func (api *Api) createApplication(name string) (string, bool) {
+	path := "applications"
+	var dat map[string]interface{}
+	s := name
+	if err := json.Unmarshal([]byte(name), &dat); err != nil {
+		dat = make(map[string]interface{})
+		dat["name"] = name
+		sb, _ := json.Marshal(dat)
+		s = string(sb)
+	}
+	resp, err := api.httpPost(path, s)
 	return handleResponse(resp, err)
 }

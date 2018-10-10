@@ -26,6 +26,9 @@ var CliState struct {
 }
 
 var MarlinApi *Api
+var splash = `
+Marlin Search
+`
 
 func changeLivePrefix() (string, bool) {
 	return CliState.CliPrefix, true
@@ -38,7 +41,7 @@ func Init(args []string) {
 	apiKeyPtr := f.String("k", "12345678901234567890123456789012", "The master api key")
 	f.Parse(args)
 
-	fmt.Println("Marlin CLI 0.1")
+	fmt.Println(splash)
 	fmt.Println("Please use `exit` or `Ctrl-D` to exit this program.\n")
 
 	defer fmt.Println("Bye!")

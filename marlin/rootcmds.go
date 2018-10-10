@@ -1,8 +1,11 @@
 package marlin
 
 import (
+	"encoding/json"
 	"fmt"
 	"github.com/c-bata/go-prompt"
+	"github.com/olekukonko/tablewriter"
+	"os"
 	"strings"
 )
 
@@ -36,8 +39,38 @@ func displayInfo() {
 	displayResult(resp, success)
 }
 
+func displayTableJson(jstr string, header []string) {
+	var result []map[string]interface{}
+	if err := json.Unmarshal([]byte(jstr), &result); err == nil {
+		table := tablewriter.NewWriter(os.Stdout)
+		table.SetHeader(header)
+		for _, d := range result {
+			var row []string
+			for _, h := range header {
+				row = append(row, d[h].(string))
+			}
+			table.Append(row)
+		}
+		table.Render()
+		fmt.Println("")
+	} else {
+		fmt.Println(err)
+	}
+}
+
 func listApps() {
 	resp, success := MarlinApi.getApplications()
+	if success {
+		h := []string{"name", "appId", "apiKey"}
+		displayTableJson(resp, h)
+	}
+}
+
+func createApp(args []string) {
+	if len(args) != 2 {
+		fmt.Println("Error: create-application <App Name>")
+	}
+	resp, success := MarlinApi.createApplication(args[1])
 	displayResult(resp, success)
 }
 
@@ -50,6 +83,8 @@ func performRootCommand(in string) {
 		listApps()
 	case "list-applications":
 		listApps()
+	case "create-application":
+		createApp(args)
 	case "info":
 		displayInfo()
 	}
