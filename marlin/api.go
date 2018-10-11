@@ -83,6 +83,16 @@ func (api *Api) getApplications() (string, bool) {
 	return handleResponse(resp, err)
 }
 
+func (api *Api) getIndexes() (string, bool) {
+	resp, err := api.httpGet("indexes")
+	return handleResponse(resp, err)
+}
+
+func (api *Api) getApplication(appName string) (string, bool) {
+	resp, err := api.httpGet("applications/" + appName)
+	return handleResponse(resp, err)
+}
+
 func (api *Api) createApplication(name string) (string, bool) {
 	path := "applications"
 	var dat map[string]interface{}
@@ -94,5 +104,37 @@ func (api *Api) createApplication(name string) (string, bool) {
 		s = string(sb)
 	}
 	resp, err := api.httpPost(path, s)
+	return handleResponse(resp, err)
+}
+
+func (api *Api) createIndex(name string, numShards int) (string, bool) {
+	path := "indexes"
+	var dat map[string]interface{}
+	s := name
+	if err := json.Unmarshal([]byte(name), &dat); err != nil {
+		dat = make(map[string]interface{})
+		dat["name"] = name
+		dat["numShards"] = numShards
+		sb, _ := json.Marshal(dat)
+		s = string(sb)
+	}
+	resp, err := api.httpPost(path, s)
+	return handleResponse(resp, err)
+}
+
+func (api *Api) getNumIndexJobs() float64 {
+	resp, err := api.httpGet("indexes/" + CliState.ActiveIndex + "/info")
+	body, success := handleResponse(resp, err)
+	if success {
+		var dat map[string]interface{}
+		if err = json.Unmarshal([]byte(body), &dat); err == nil {
+			return dat["numJobs"].(float64)
+		}
+	}
+	return 1
+}
+
+func (api *Api) addObjectsToIndex(s string) (string, bool) {
+	resp, err := api.httpPost("indexes/"+CliState.ActiveIndex, s)
 	return handleResponse(resp, err)
 }

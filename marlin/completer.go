@@ -14,7 +14,9 @@ func Completer(d prompt.Document) []prompt.Suggest {
 	case ROOT:
 		return rootCompleter(args)
 	case APP:
+		return appCompleter(args)
 	case INDEX:
+		return indexCompleter(args, d)
 	}
 	return rootCompleter(args)
 }

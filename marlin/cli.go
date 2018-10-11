@@ -4,6 +4,7 @@ import (
 	"flag"
 	"fmt"
 	"github.com/c-bata/go-prompt"
+	"strings"
 )
 
 type Context int
@@ -34,7 +35,26 @@ var splash = `
 `
 
 func changeLivePrefix() (string, bool) {
+	CliState.CliPrefix = getCliPrefix()
 	return CliState.CliPrefix, true
+}
+
+func getCliPrefix() string {
+	if CliState.Connected == false {
+		return ">>> "
+	}
+	htok := strings.Split(CliState.Host, "/")
+	prefix := htok[len(htok)-1]
+	prefix += "> "
+	switch CliState.CurrentContext {
+	case ROOT:
+		return prefix
+	case APP:
+		return CliState.ActiveApp + "@" + prefix
+	case INDEX:
+		return CliState.ActiveApp + "/" + CliState.ActiveIndex + "@" + prefix
+	}
+	return prefix
 }
 
 func Init(args []string) {
@@ -45,7 +65,6 @@ func Init(args []string) {
 	f.Parse(args)
 
 	fmt.Println(splash)
-	fmt.Println("Please use `exit` or `Ctrl-D` to exit this program.\n")
 
 	defer fmt.Println("Bye!")
 
@@ -58,16 +77,18 @@ func Init(args []string) {
 	CliState.Connected = connected
 	if connected {
 		fmt.Println("Connected to", CliState.Host, "Marlin version", version)
-		CliState.CliPrefix = CliState.Host + "> "
+		CliState.CliPrefix = getCliPrefix()
 	} else {
 		CliState.CliPrefix = ">>> "
 		fmt.Println("Failed to connect to ", CliState.Host, ". Please use connect command to connect")
 	}
+	fmt.Println("Please use `exit` or `Ctrl-D` to exit this program.\n")
 
 	p := prompt.New(
 		Executor,
 		Completer,
 		prompt.OptionPrefix(">>> "),
+		prompt.OptionCompletionWordSeparator(" /"),
 		prompt.OptionLivePrefix(changeLivePrefix),
 		prompt.OptionInputTextColor(prompt.Yellow),
 		//prompt.OptionSuggestionTextColor(prompt.White),

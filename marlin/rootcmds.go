@@ -4,8 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/c-bata/go-prompt"
-	"github.com/olekukonko/tablewriter"
-	"os"
 	"strings"
 )
 
@@ -15,6 +13,7 @@ var rootCommands = []prompt.Suggest{
 	{Text: "create-application", Description: "Create an application"},
 	{Text: "application", Description: "Choose an application, enter into app context"},
 	{Text: "help", Description: "Displays list of available commands"},
+	{Text: "connect", Description: "Connect to a different host"},
 	{Text: "exit", Description: "Exit this program"},
 }
 
@@ -61,29 +60,10 @@ func displayInfo() {
 	displayResult(resp, success)
 }
 
-func displayTableJson(jstr string, header []string) {
-	var result []map[string]interface{}
-	if err := json.Unmarshal([]byte(jstr), &result); err == nil {
-		table := tablewriter.NewWriter(os.Stdout)
-		table.SetHeader(header)
-		for _, d := range result {
-			var row []string
-			for _, h := range header {
-				row = append(row, d[h].(string))
-			}
-			table.Append(row)
-		}
-		table.Render()
-		fmt.Println("")
-	} else {
-		fmt.Println(err)
-	}
-}
-
 func listApps() {
 	resp, success := MarlinApi.getApplications()
 	if success {
-		h := []string{"name", "appId", "apiKey"}
+		h := []string{"name", "appId", "apiKey", "numIndexes"}
 		displayTableJson(resp, h)
 	}
 }
@@ -95,6 +75,44 @@ func createApp(args []string) {
 	}
 	resp, success := MarlinApi.createApplication(args[1])
 	displayResult(resp, success)
+}
+
+func chooseApplication(args []string) {
+	if len(args) != 2 {
+		fmt.Println("Error: application <App Name>\n")
+		return
+	}
+	resp, success := MarlinApi.getApplication(args[1])
+	if success {
+		var result map[string]interface{}
+		if err := json.Unmarshal([]byte(resp), &result); err == nil {
+			MarlinApi.AppId = result["appId"].(string)
+			MarlinApi.ApiKey = result["apiKey"].(string)
+			CliState.ActiveApp = args[1]
+			CliState.CurrentContext = APP
+		}
+	} else {
+		fmt.Println("Error:  Could not retrieve application details")
+	}
+}
+
+func connectToHost(args []string) {
+	if len(args) != 2 {
+		fmt.Println("Error: connect <http(s)://hostname:port>\n")
+		return
+	}
+	MarlinApi.Host = args[1]
+	CliState.Host = args[1]
+
+	connected, version := MarlinApi.Connect()
+	CliState.Connected = connected
+	if connected {
+		fmt.Println("Connected to", CliState.Host, "Marlin version", version)
+		CliState.CliPrefix = getCliPrefix()
+	} else {
+		CliState.CliPrefix = ">>> "
+		fmt.Println("Failed to connect to ", CliState.Host, ". Please use connect command to connect")
+	}
 }
 
 func performRootCommand(in string) {
@@ -110,6 +128,12 @@ func performRootCommand(in string) {
 		createApp(args)
 	case "info":
 		displayInfo()
+	case "application":
+		chooseApplication(args)
+	case "connect":
+		connectToHost(args)
+	default:
+		displayInvalidCommand(args[0])
 	}
 
 }
