@@ -155,9 +155,11 @@ func loadFile(in string) {
 			fmt.Println("Failed to load file")
 			return
 		}
+		start := time.Now()
 		js := j.([]interface{})
 		limit := 10000
 		for len(js) > 0 {
+			start2 := time.Now()
 			var pushjs []interface{}
 			if len(js) > limit {
 				pushjs = js[:10000]
@@ -167,13 +169,25 @@ func loadFile(in string) {
 				js = js[:0]
 			}
 			jjs, _ := json.Marshal(pushjs)
+			for {
+				time.Sleep(100 * time.Millisecond)
+				if MarlinApi.getNumIndexJobs() == 0 {
+					break
+				}
+			}
+
 			body, success := MarlinApi.addObjectsToIndex(string(jjs[:]))
 			if !success {
 				fmt.Println("Failed to load file")
 				return
 			}
-			fmt.Println("Data Add Response", string(body))
+			elapsed2 := time.Since(start2)
+			fmt.Println("Data Add Response", string(body), elapsed2)
 		}
+		elapsed := time.Since(start)
+		// Lookup and sort took
+		fmt.Println("Adding took", elapsed)
+
 		return
 	}
 	fmt.Println("Failed to load file", path)
