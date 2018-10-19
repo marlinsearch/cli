@@ -1,9 +1,11 @@
 package marlin
 
 import (
+	"bufio"
 	"encoding/json"
 	"fmt"
 	"github.com/c-bata/go-prompt"
+	"os"
 	"strconv"
 	"strings"
 )
@@ -11,6 +13,7 @@ import (
 var appCommands = []prompt.Suggest{
 	{Text: "list-indexes", Description: "List all available indexes"},
 	{Text: "create-index", Description: "Create an index"},
+	{Text: "delete-index", Description: "Delete an index"},
 	{Text: "index", Description: "Choose an index, enter into index context"},
 	{Text: "help", Description: "Displays list of available commands"},
 	{Text: "exit", Description: "Exit this program"},
@@ -28,6 +31,8 @@ func appCompleter(args []string) []prompt.Suggest {
 				{Text: "num-shards"},
 			}
 		}
+	case "delete-index":
+		return prompt.FilterHasPrefix(getIndexPrompts(), args[1], true)
 	case "index":
 		return prompt.FilterHasPrefix(getIndexPrompts(), args[1], true)
 	}
@@ -56,7 +61,7 @@ func createIndex(args []string) {
 	}
 	numShards := 1
 	if len(args) == 4 {
-		if i, err := strconv.Atoi(args[3]); err != nil {
+		if i, err := strconv.Atoi(args[3]); err == nil {
 			numShards = i
 		}
 	}
@@ -88,9 +93,31 @@ func isValidIndex(name string) bool {
 	return false
 }
 
+func deleteIndex(args []string) {
+	if len(args) != 2 {
+		fmt.Println("Error: delete-index <Index Name>\n")
+		return
+	}
+	if isValidIndex(args[1]) {
+		reader := bufio.NewReader(os.Stdin)
+		fmt.Print("Please reenter name of index to delete : ")
+		text, _ := reader.ReadString('\n')
+		text = strings.TrimSpace(text)
+		if args[1] == text {
+			if _, success := MarlinApi.deleteIndex(text); success {
+				fmt.Println("Deleted", text, "successfully")
+			}
+		} else {
+			fmt.Println("Index name mismatch, please try again")
+		}
+	} else {
+		fmt.Println("Error:  Invalid index name")
+	}
+}
+
 func chooseIndex(args []string) {
 	if len(args) != 2 {
-		fmt.Println("Error: application <App Name>\n")
+		fmt.Println("Error: index <Index Name>\n")
 		return
 	}
 	if isValidIndex(args[1]) {
@@ -120,6 +147,8 @@ func performAppCommand(in string) {
 		listIndexes()
 	case "index":
 		chooseIndex(args)
+	case "delete-index":
+		deleteIndex(args)
 	case "..":
 		exitAppContext()
 	default:

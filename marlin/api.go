@@ -46,6 +46,15 @@ func (api *Api) httpPost(path string, data string) (resp *http.Response, err err
 	return client.Do(req)
 }
 
+func (api *Api) httpDelete(path string) (resp *http.Response, err error) {
+	client := getClient()
+	url := api.formUrl(path)
+	req, err := http.NewRequest("DELETE", url, nil)
+	req.Header.Add("X-Marlin-Application-Id", api.AppId)
+	req.Header.Add("X-Marlin-REST-API-KEY", api.ApiKey)
+	return client.Do(req)
+}
+
 func (api *Api) Connect() (bool, string) {
 	resp, err := api.httpGet("marlin")
 	if err != nil || resp.StatusCode != 200 {
@@ -119,6 +128,12 @@ func (api *Api) createIndex(name string, numShards int) (string, bool) {
 		s = string(sb)
 	}
 	resp, err := api.httpPost(path, s)
+	return handleResponse(resp, err)
+}
+
+func (api *Api) deleteIndex(name string) (string, bool) {
+	path := "indexes/" + name
+	resp, err := api.httpDelete(path)
 	return handleResponse(resp, err)
 }
 
