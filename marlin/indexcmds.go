@@ -17,9 +17,12 @@ var indexCommands = []prompt.Suggest{
 	{Text: "load", Description: "Load the index with data"},
 	{Text: "clear", Description: "Clear the index"},
 	{Text: "reindex", Description: "Reindex the index data"},
-	{Text: "mapping", Description: "Display index mapping information"},
+	{Text: "info", Description: "Get index information"},
+	{Text: "get-mapping", Description: "Display index mapping information"},
 	{Text: "help", Description: "Displays list of available commands"},
 	{Text: "exit", Description: "Exit this program"},
+	{Text: "get-settings", Description: "Get settings for this index"},
+	{Text: "set-settings", Description: "Set settings for this index"},
 	{Text: "..", Description: "Exit index context back to application context"},
 }
 
@@ -128,9 +131,35 @@ func loadNewLineJsonFile(path string) {
 	fmt.Println("Adding took", elapsed)
 }
 
+func setSettings(in string) {
+	json := in[len("set-settings "):]
+	resp, success := MarlinApi.setIndexSettings(json)
+	displayResult(resp, success)
+}
+
+func getSettings() {
+	resp, success := MarlinApi.getIndexSettings()
+	displayResult(resp, success)
+}
+
+func clearIndex() {
+	resp, success := MarlinApi.clearIndex()
+	displayResult(resp, success)
+}
+
+func indexInfo() {
+	resp, success := MarlinApi.getIndexInfo()
+	displayResult(resp, success)
+}
+
+func getMapping() {
+	resp, success := MarlinApi.getIndexMapping()
+	displayResult(resp, success)
+}
+
 // TODO; Cleanup.. and add support to interrupt upload
 func loadFile(in string) {
-	path := in[5:]
+	path := in[len("load "):]
 	path = strings.TrimSpace(path)
 	if strings.HasPrefix(path, "~") {
 		usr, _ := user.Current()
@@ -201,8 +230,20 @@ func performIndexCommand(in string) {
 		displayHelp(indexCommands)
 	case "load":
 		loadFile(in)
+	case "get-settings":
+		getSettings()
+	case "set-settings":
+		setSettings(in)
+	case "get-mapping":
+		getMapping()
+	case "clear":
+		clearIndex()
+	case "info":
+		indexInfo()
 	case "..":
 		exitIndexContext()
+	case "":
+		return
 	default:
 		displayInvalidCommand(args[0])
 	}

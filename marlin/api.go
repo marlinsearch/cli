@@ -137,6 +137,32 @@ func (api *Api) deleteIndex(name string) (string, bool) {
 	return handleResponse(resp, err)
 }
 
+func (api *Api) clearIndex() (string, bool) {
+	path := "indexes/" + CliState.ActiveIndex + "/clear"
+	resp, err := api.httpPost(path, "")
+	return handleResponse(resp, err)
+}
+
+func (api *Api) setIndexSettings(json string) (string, bool) {
+	resp, err := api.httpPost("indexes/"+CliState.ActiveIndex+"/settings", json)
+	return handleResponse(resp, err)
+}
+
+func (api *Api) getIndexSettings() (string, bool) {
+	resp, err := api.httpGet("indexes/" + CliState.ActiveIndex + "/settings")
+	return handleResponse(resp, err)
+}
+
+func (api *Api) getIndexMapping() (string, bool) {
+	resp, err := api.httpGet("indexes/" + CliState.ActiveIndex + "/mapping")
+	return handleResponse(resp, err)
+}
+
+func (api *Api) getIndexInfo() (string, bool) {
+	resp, err := api.httpGet("indexes/" + CliState.ActiveIndex + "/info")
+	return handleResponse(resp, err)
+}
+
 func (api *Api) getNumIndexJobs() float64 {
 	resp, err := api.httpGet("indexes/" + CliState.ActiveIndex + "/info")
 	body, success := handleResponse(resp, err)
