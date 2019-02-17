@@ -23,6 +23,7 @@ var indexCommands = []prompt.Suggest{
 	{Text: "exit", Description: "Exit this program"},
 	{Text: "get-settings", Description: "Get settings for this index"},
 	{Text: "set-settings", Description: "Set settings for this index"},
+	{Text: "s", Description: "Search this index"},
 	{Text: "..", Description: "Exit index context back to application context"},
 }
 
@@ -137,6 +138,12 @@ func setSettings(in string) {
 	displayResult(resp, success)
 }
 
+func searchIndex(in string) {
+	json := in[len("s "):]
+	resp, success := MarlinApi.searchIndex(json)
+	displayResult(resp, success)
+}
+
 func getSettings() {
 	resp, success := MarlinApi.getIndexSettings()
 	displayResult(resp, success)
@@ -240,6 +247,8 @@ func performIndexCommand(in string) {
 		clearIndex()
 	case "info":
 		indexInfo()
+	case "s":
+		searchIndex(in)
 	case "..":
 		exitIndexContext()
 	case "":
