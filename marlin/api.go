@@ -148,12 +148,23 @@ func (api *Api) setIndexSettings(json string) (string, bool) {
 	return handleResponse(resp, err)
 }
 
+func (api *Api) deleteDocument(id string) (string, bool) {
+	resp, err := api.httpDelete("indexes/" + CliState.ActiveIndex + "/" + id)
+	return handleResponse(resp, err)
+}
+
+func (api *Api) getDocument(id string) (string, bool) {
+	resp, err := api.httpGet("indexes/" + CliState.ActiveIndex + "/" + id)
+	return handleResponse(resp, err)
+}
+
 func (api *Api) searchIndex(j string) (string, bool) {
 	var dat map[string]interface{}
 	s := j
 	if err := json.Unmarshal([]byte(j), &dat); err != nil {
 		dat = make(map[string]interface{})
 		dat["q"] = j
+		dat["explain"] = true
 		sb, _ := json.Marshal(dat)
 		s = string(sb)
 	}

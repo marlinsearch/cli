@@ -51,6 +51,7 @@ func displayResult(resp string, success bool) {
 		fmt.Println(resp)
 	} else {
 		fmt.Println("Failed to execute command")
+		fmt.Println(resp)
 	}
 	fmt.Println("")
 }

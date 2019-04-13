@@ -6,9 +6,11 @@ import (
 	"fmt"
 	"github.com/c-bata/go-prompt"
 	"github.com/c-bata/go-prompt/completer"
+	"github.com/hokaccha/go-prettyjson"
 	"io/ioutil"
 	"os"
 	"os/user"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -16,6 +18,7 @@ import (
 var indexCommands = []prompt.Suggest{
 	{Text: "load", Description: "Load the index with data"},
 	{Text: "clear", Description: "Clear the index"},
+	{Text: "delete", Description: "Delete document from index"},
 	{Text: "reindex", Description: "Reindex the index data"},
 	{Text: "info", Description: "Get index information"},
 	{Text: "get-mapping", Description: "Display index mapping information"},
@@ -98,10 +101,10 @@ func loadNewLineJsonFile(path string) {
 		count++
 		if count >= numperpush {
 			for {
-				time.Sleep(100 * time.Millisecond)
-				if MarlinApi.getNumIndexJobs() == 0 {
+				if MarlinApi.getNumIndexJobs() < 10 {
 					break
 				}
+				time.Sleep(100 * time.Millisecond)
 			}
 			count = 0
 			trials++
@@ -138,10 +141,58 @@ func setSettings(in string) {
 	displayResult(resp, success)
 }
 
-func searchIndex(in string) {
-	json := in[len("s "):]
-	resp, success := MarlinApi.searchIndex(json)
+func deleteDocument(in string) {
+	id := in[len("delete "):]
+	resp, success := MarlinApi.getDocument(id)
+	if success {
+		var result map[string]interface{}
+		json.Unmarshal([]byte(resp), &result)
+		if rs, err := prettyjson.Marshal(result); err == nil {
+			fmt.Println(string(rs))
+		} else {
+			fmt.Println(err)
+		}
+	}
+
+	resp, success = MarlinApi.deleteDocument(id)
 	displayResult(resp, success)
+}
+
+func getDocument(in string) {
+	id := in[len("get "):]
+	resp, success := MarlinApi.getDocument(id)
+	if success {
+		var result map[string]interface{}
+		json.Unmarshal([]byte(resp), &result)
+		if rs, err := json.MarshalIndent(result, "", "  "); err == nil {
+			fmt.Println(string(rs))
+		} else {
+			fmt.Println(err)
+		}
+	}
+}
+
+func _unescape(_jsonRaw json.RawMessage) (json.RawMessage, error) {
+	str, err := strconv.Unquote(strings.Replace(strconv.Quote(string(_jsonRaw)), `\\u`, `\u`, -1))
+	if err != nil {
+		return nil, err
+	}
+	return []byte(str), nil
+}
+
+func searchIndex(in string) {
+	resp, success := MarlinApi.searchIndex(in)
+	if success {
+		var result map[string]interface{}
+		json.Unmarshal([]byte(resp), &result)
+		if rs, err := prettyjson.Marshal(result); err == nil {
+			rs, _ = _unescape(rs)
+			fmt.Println(string(rs))
+		} else {
+			fmt.Println(err)
+		}
+	}
+	//displayResult(resp, success)
 }
 
 func getSettings() {
@@ -206,10 +257,10 @@ func loadFile(in string) {
 			}
 			jjs, _ := json.Marshal(pushjs)
 			for {
-				time.Sleep(100 * time.Millisecond)
-				if MarlinApi.getNumIndexJobs() == 0 {
+				if MarlinApi.getNumIndexJobs() < 10 {
 					break
 				}
+				time.Sleep(100 * time.Millisecond)
 			}
 
 			body, success := MarlinApi.addObjectsToIndex(string(jjs[:]))
@@ -241,20 +292,22 @@ func performIndexCommand(in string) {
 		getSettings()
 	case "set-settings":
 		setSettings(in)
+	case "delete":
+		deleteDocument(in)
+	case "get":
+		getDocument(in)
 	case "get-mapping":
 		getMapping()
 	case "clear":
 		clearIndex()
 	case "info":
 		indexInfo()
-	case "s":
-		searchIndex(in)
 	case "..":
 		exitIndexContext()
 	case "":
 		return
 	default:
-		displayInvalidCommand(args[0])
+		searchIndex(in)
 	}
 
 }
